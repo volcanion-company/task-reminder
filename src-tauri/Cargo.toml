@@ -1,0 +1,32 @@
+[package]
+name = "task-reminder"
+version = "0.1.0"
+description = "Offline-first desktop Todo & Reminder application"
+authors = ["Task Reminder Team"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.31", features = ["bundled"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[features]
+# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+opt-level = 0
+debug = 0
+split-debuginfo = "unpacked"
+codegen-units = 256  # Faster compilation with more parallel units
+incremental = true

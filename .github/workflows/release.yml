@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build Release (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            platform: windows
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            platform: macos-intel
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            platform: macos-arm
+            target: aarch64-apple-darwin
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            src-tauri/target/
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
+      
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev
+      
+      - name: Install frontend dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Run tests
+        run: |
+          yarn test --run
+          cd src-tauri && cargo test
+      
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Task Reminder ${{ github.ref_name }}'
+          releaseBody: |
+            ## What's New in ${{ github.ref_name }}
+            
+            ### Features
+            - Task management with priority and status tracking
+            - Reminder system with recurring notifications
+            - Tag-based organization
+            - Calendar view
+            - Dark/Light mode support
+            - Offline-first with local SQLite database
+            
+            ### Installation
+            Download the appropriate installer for your platform below.
+            
+            **Windows**: Download the `.msi` or `.exe` installer
+            **macOS (Intel)**: Download the `x86_64.dmg` file
+            **macOS (Apple Silicon)**: Download the `aarch64.dmg` file
+            **Linux**: Download the `.deb` or `.AppImage` file
+            
+            ### Platform Builds
+            - **Ubuntu/Debian Linux** (`x86_64-unknown-linux-gnu`)
+            - **Windows** (`x86_64-pc-windows-msvc`)
+            - **macOS Intel** (`x86_64-apple-darwin`)
+            - **macOS Apple Silicon** (`aarch64-apple-darwin`)
+            
+            ### Changes
+            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for detailed changes.
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }}
