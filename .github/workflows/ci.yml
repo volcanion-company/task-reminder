@@ -53,7 +53,7 @@ jobs:
         run: yarn build
       
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.node-version == '20.x'
         with:
           name: frontend-build
@@ -171,7 +171,7 @@ jobs:
       
       - name: Upload artifacts (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: tauri-app-linux
           path: |
@@ -181,7 +181,7 @@ jobs:
       
       - name: Upload artifacts (Windows)
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: tauri-app-windows
           path: |
@@ -191,7 +191,7 @@ jobs:
       
       - name: Upload artifacts (macOS)
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: tauri-app-macos
           path: |
